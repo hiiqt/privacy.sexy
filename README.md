@@ -1,3 +1,67 @@
+# Mobile Privacy Guide — a privacy.sexy modernization
+
+> Fork of **[privacy.sexy](https://github.com/undergroundwires/privacy.sexy)** — modernized into a mobile-first privacy guide for Android & GrapheneOS. Built with [IBM Bob](https://bob.ibm.com/) for the AngelHack *Building With IBM Bob* hackathon (Theme 2: Modernize What Matters).
+
+## What this fork adds
+
+Upstream enforces privacy scripts on desktop. This fork turns its data-driven engine into an **honest mobile guide** — it advises, never executes:
+
+- **38 plain-English privacy guides** — 21 Android + 17 GrapheneOS, every setting explained with color-coded recommendations
+- **Privacy posture slider** — Standard / Strict filtering matched to your threat model
+- **Interactive checklist** — check off guides as you complete them, progress persists per device ("7 of 21 guides secured")
+- **Reference commands, never execution** — ADB commands and settings paths are shown for you to run yourself; there is no Run button, by design
+- **Official-source directory** — firmware, flashing, and FRP guidance linking only to official sources
+
+## Live demo
+
+Deploying before the Oct 18 deadline — URL coming soon.
+
+## Tech stack
+
+TypeScript · Vue 3 · Vite · YAML-driven collections · `localStorage` persistence · AGPL-3.0
+
+## Run it
+
+```bash
+npm install
+npm run build:mobile    # builds the mobile webapp into dist-mobile/
+npx serve dist-mobile   # open http://localhost:3000 (or your LAN IP on your phone)
+```
+
+## Test
+
+```bash
+npm run test:unit         # unit suite
+npm run test:integration # integration suite (incl. MobileCollections regression test)
+npx vue-tsc --noEmit      # typecheck
+```
+
+## What's new in this fork
+
+| Path | What |
+|---|---|
+| `src/application/collections/android.yaml` | 21 Android guides |
+| `src/application/collections/grapheneos.yaml` | 17 GrapheneOS guides |
+| `src/presentation/mobile/` | Mobile entry point (`main.ts`, `MobileApp.vue`, `index.html`) |
+| `src/presentation/components/Mobile/` | Layout, accordions, script cards, checklist, progress bar |
+| `vite.mobile.config.ts` | Mobile build config behind `npm run build:mobile` |
+| `docs/mobile-guide-plan.md` | Architecture plan |
+| `.bob/` | Bob IDE rules & skills used to build this |
+
+## Built with IBM Bob
+
+Designed in Plan mode, implemented session-by-session in Agent mode — see `.bob/` for the rules and skills, `docs/mobile-guide-plan.md` for the plan.
+
+## License
+
+AGPL-3.0, same as upstream — see [LICENSE](LICENSE).
+
+---
+
+*Upstream README follows.*
+
+---
+
 # privacy.sexy — Privacy is sexy
 
 > Enforce privacy & security best-practices on Windows, macOS and Linux, because privacy is sexy.
