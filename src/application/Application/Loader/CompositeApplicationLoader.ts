@@ -3,7 +3,7 @@ import { createApplication, type ApplicationFactory } from '@/domain/Application
 import type { ProjectDetailsLoader } from '@/application/Application/Loader/ProjectDetails/ProjectDetailsLoader';
 import { loadProjectDetailsFromMetadata } from '@/application/Application/Loader/ProjectDetails/MetadataProjectDetailsLoader';
 import { createTypeValidator, type TypeValidator } from '@/application/Common/TypeValidator';
-import { loadCollections, type CollectionsLoader } from '@/application/Application/Loader/Collections/CollectionsLoader';
+import { loadCollections, loadMobileCollections, type CollectionsLoader } from '@/application/Application/Loader/Collections/CollectionsLoader';
 import type { ApplicationLoader } from './ApplicationLoader';
 
 interface CompositeApplicationLoader extends ApplicationLoader {
@@ -41,3 +41,12 @@ const DefaultUtilities: ApplicationLoaderUtilities = {
   loadCollections,
   typeValidator: createTypeValidator(),
 };
+
+const MobileUtilities: ApplicationLoaderUtilities = {
+  createApplication,
+  loadProjectDetails: loadProjectDetailsFromMetadata,
+  loadCollections: loadMobileCollections,
+  typeValidator: createTypeValidator(),
+};
+
+export const loadMobileApplicationComposite: ApplicationLoader = () => loadApplicationComposite(MobileUtilities);

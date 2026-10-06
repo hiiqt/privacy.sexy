@@ -23,6 +23,18 @@ export const loadCollections: CollectionsLoader = (
   return collections;
 };
 
+export const loadMobileCollections: CollectionsLoader = (
+  projectDetails,
+  utilities = DefaultUtilities,
+) => {
+  const collectionNames: readonly string[] = ['android', 'grapheneos'];
+  const collectionsData = collectionNames.map((name) => utilities.loadCollectionFile(name));
+  const collections = collectionsData.map(
+    (collection) => utilities.parseCategoryCollection(collection, projectDetails),
+  );
+  return collections;
+};
+
 interface CollectionsLoaderUtilities {
   readonly loadCollectionFile: CollectionDataProvider;
   readonly parseCategoryCollection: CollectionCompiler;
