@@ -1,8 +1,11 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!--
   MobileScriptCard — renders a single script as an advice card.
-  Displays: name, docs (plain-English reason), and code.execute as a
-  read-only reference block with a Copy button via UseClipboard.
+  Displays:
+  - Checkbox + name row
+  - Emoji bullet list (from the "Affects: …" first line of docs)
+  - Plain-English description (remaining lines of docs)
+  - Read-only reference code block with Copy button
   A checkbox lets users mark guides as done; state is backed by
   UserSelection (in-memory) and persisted to localStorage via the
   checklist:toggle event handled in MobileGuideLayout.
@@ -22,9 +25,20 @@
       <span class="card__name" :class="{ 'card__name--done': isChecked }">{{ script.name }}</span>
     </label>
 
-    <!-- Plain-English docs -->
+    <!-- Emoji affects line (first doc line starting with "Affects:") -->
+    <ul v-if="affectsBullets.length" class="card__affects" aria-label="What this setting governs">
+      <li
+        v-for="(bullet, i) in affectsBullets"
+        :key="i"
+        class="card__affects-item"
+      >
+        {{ bullet }}
+      </li>
+    </ul>
+
+    <!-- Plain-English description (remaining doc lines) -->
     <p
-      v-for="(line, i) in script.docs"
+      v-for="(line, i) in descriptionLines"
       :key="i"
       class="card__docs"
     >
@@ -50,7 +64,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, type PropType } from 'vue';
+import {
+  defineComponent, ref, computed, type PropType,
+} from 'vue';
 import type { Script } from '@/domain/Executables/Script/Script';
 import type { ExecutableId } from '@/domain/Executables/Identifiable';
 import { injectKey } from '@/presentation/injectionSymbols';
@@ -82,7 +98,36 @@ export default defineComponent({
       setTimeout(() => { copyLabel.value = 'Copy'; }, 2000);
     }
 
-    return { copyLabel, copy };
+    /**
+     * Parse docs array: the first line may be "Affects: A · B · C".
+     * If so, split into bullet items; remaining lines become description.
+     */
+    const affectsBullets = computed<string[]>(() => {
+      const docs = props.script.docs ?? [];
+      if (!docs.length) return [];
+      const first = docs[0].trim();
+      if (!first.startsWith('Affects:')) return [];
+      return first
+        .replace(/^Affects:\s*/, '')
+        .split('·')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    });
+
+    const descriptionLines = computed<string[]>(() => {
+      const docs = props.script.docs ?? [];
+      if (!docs.length) return [];
+      const first = docs[0].trim();
+      const rest = first.startsWith('Affects:') ? docs.slice(1) : docs;
+      // Drop leading empty lines after the affects line
+      let start = 0;
+      while (start < rest.length && rest[start].trim() === '') start++;
+      return rest.slice(start);
+    });
+
+    return {
+      copyLabel, copy, affectsBullets, descriptionLines,
+    };
   },
 });
 </script>
@@ -90,8 +135,10 @@ export default defineComponent({
 <style scoped>
 .card {
   padding: 0.875rem 1rem;
-  border-top: 1px solid #e5e5ea;
+  border-top: 1px solid var(--card-border, #e5e5ea);
   transition: background 0.15s;
+  position: relative;
+  z-index: 1;
 }
 
 .card:first-child {
@@ -99,7 +146,7 @@ export default defineComponent({
 }
 
 .card--checked {
-  background: #f0faf0;
+  background: var(--card-checked-bg, #f0faf0);
 }
 
 .card__title-row {
@@ -107,7 +154,7 @@ export default defineComponent({
   align-items: flex-start;
   gap: 0.6rem;
   cursor: pointer;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.4rem;
 }
 
 .card__checkbox {
@@ -115,34 +162,53 @@ export default defineComponent({
   margin-top: 0.1rem;
   width: 1.1rem;
   height: 1.1rem;
-  accent-color: #34c759;
+  accent-color: var(--accent-check, #00c896);
   cursor: pointer;
 }
 
 .card__name {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--text-primary, #1d1d1f);
   line-height: 1.3;
 }
 
 .card__name--done {
-  color: #6e6e73;
+  color: var(--text-muted, #6e6e73);
   text-decoration: line-through;
+}
+
+/* ── Affects bullet list ── */
+.card__affects {
+  list-style: none;
+  margin: 0 0 0.5rem 1.7rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+}
+
+.card__affects-item {
+  font-size: 0.78rem;
+  color: var(--affects-color, #007aff);
+  background: var(--affects-bg, rgba(0,122,255,0.07));
+  border-radius: 4px;
+  padding: 0.15rem 0.4rem;
+  white-space: nowrap;
 }
 
 .card__docs {
   margin: 0 0 0.4rem;
   font-size: 0.85rem;
-  color: #3a3a3c;
-  line-height: 1.5;
+  color: var(--text-secondary, #3a3a3c);
+  line-height: 1.55;
 }
 
 .card__code-block {
   margin-top: 0.6rem;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #d1d1d6;
+  border: 1px solid #2c2c2e;
   background: #1d1d1f;
 }
 
@@ -169,7 +235,7 @@ export default defineComponent({
   font-size: 0.7rem;
   padding: 0.2rem 0.5rem;
   cursor: pointer;
-  min-height: 28px; /* touch target */
+  min-height: 28px;
   transition: background 0.15s, color 0.15s;
 }
 

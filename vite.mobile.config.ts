@@ -8,6 +8,7 @@ const MOBILE_DIRECTORY = resolve(getSelfDirectoryAbsolutePath(), 'src/presentati
 
 export default defineConfig({
   ...createVueConfig({ supportLegacyBrowsers: false }),
+  base: process.env.PAGES_BASE ?? '/',
   root: MOBILE_DIRECTORY,
   build: {
     outDir: resolve(getSelfDirectoryAbsolutePath(), 'dist-mobile'),

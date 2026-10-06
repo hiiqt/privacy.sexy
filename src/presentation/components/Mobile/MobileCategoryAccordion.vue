@@ -5,6 +5,8 @@
   Scripts with no recommend (undefined) are always shown.
   Subcategories are rendered recursively.
   Passes checkedIds down for checkbox rendering and bubbles toggle events up.
+  Styled with CSS custom properties that cascade from MobileGuideLayout's
+  dark/light token definitions.
 -->
 <template>
   <div class="accordion">
@@ -102,19 +104,21 @@ export default defineComponent({
 <style scoped>
 .accordion {
   margin: 0 0.75rem 0.5rem;
-  background: #fff;
+  background: var(--bg-surface, #fff);
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid #e5e5ea;
+  border: 1px solid var(--card-border, #e5e5ea);
+  position: relative;
+  z-index: 1;
 }
 
 /* Nested sub-accordion has less outer margin */
 .accordion__sub {
   margin: 0;
   border-radius: 0;
-  border-left: 3px solid #d1d1d6;
+  border-left: 3px solid var(--border-color, #d1d1d6);
   border-right: none;
-  border-top: 1px solid #e5e5ea;
+  border-top: 1px solid var(--card-border, #e5e5ea);
   border-bottom: none;
 }
 
@@ -132,7 +136,7 @@ export default defineComponent({
 }
 
 .accordion__header:focus-visible {
-  outline: 2px solid #0071e3;
+  outline: 2px solid var(--accent-blue, #0071e3);
   outline-offset: -2px;
 }
 
@@ -140,18 +144,18 @@ export default defineComponent({
   flex: 1;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--text-primary, #1d1d1f);
 }
 
 .accordion__count {
   font-size: 0.78rem;
-  color: #6e6e73;
+  color: var(--text-muted, #6e6e73);
   white-space: nowrap;
 }
 
 .accordion__chevron {
   font-size: 1.1rem;
-  color: #6e6e73;
+  color: var(--text-muted, #6e6e73);
   transform: rotate(0deg);
   transition: transform 0.2s ease;
   line-height: 1;
@@ -163,7 +167,7 @@ export default defineComponent({
 
 .accordion__body {
   display: none;
-  border-top: 1px solid #e5e5ea;
+  border-top: 1px solid var(--card-border, #e5e5ea);
 }
 
 .accordion__body--open {
