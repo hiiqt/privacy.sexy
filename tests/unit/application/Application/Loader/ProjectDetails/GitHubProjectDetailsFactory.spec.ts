@@ -3,7 +3,7 @@ import { OperatingSystem } from '@/domain/OperatingSystem';
 import { EnumRangeTestRunner } from '@tests/unit/application/Common/EnumRangeTestRunner';
 import { VersionStub } from '@tests/unit/shared/Stubs/VersionStub';
 import type { PropertyKeys } from '@/TypeHelpers';
-import { type SupportedOperatingSystem, AllSupportedOperatingSystems } from '@tests/shared/TestCases/SupportedOperatingSystems';
+import { AllSupportedOperatingSystems } from '@tests/shared/TestCases/SupportedOperatingSystems';
 import type { ProjectDetailsParameters } from '@/application/Application/Loader/ProjectDetails/ProjectDetailsFactory';
 import { createGitHubProjectDetails } from '@/application/Application/Loader/ProjectDetails/GitHubProjectDetailsFactory';
 import { ProjectDetailsParametersStub } from '@tests/unit/shared/Stubs/ProjectDetailsParametersStub';
@@ -125,11 +125,11 @@ describe('GitHubProjectDetailsFactory', () => {
     });
   });
   describe('correct retrieval of download URL for every supported operating system', () => {
-    const testScenarios: Record<SupportedOperatingSystem, {
+    const desktopTestScenarios: Partial<Record<OperatingSystem, {
       readonly expected: string,
       readonly repositoryUrl: string,
       readonly version: string,
-    }> = {
+    }>> = {
       [OperatingSystem.macOS]: {
         expected: 'https://github.com/undergroundwires/privacy.sexy/releases/download/0.7.2/privacy.sexy-0.7.2.dmg',
         repositoryUrl: 'https://github.com/undergroundwires/privacy.sexy.git',
@@ -147,9 +147,19 @@ describe('GitHubProjectDetailsFactory', () => {
       },
     };
     AllSupportedOperatingSystems.forEach((operatingSystem) => {
+      const scenario = desktopTestScenarios[operatingSystem];
+      if (!scenario) {
+        it(`should throw for mobile guide-only OS: ${OperatingSystem[operatingSystem]}`, () => {
+          // arrange
+          const sut = create();
+          // act & assert
+          expect(() => sut.getDownloadUrl(operatingSystem)).to.throw();
+        });
+        return;
+      }
       it(`should return the expected download URL for ${OperatingSystem[operatingSystem]}`, () => {
         // arrange
-        const { expected, version, repositoryUrl } = testScenarios[operatingSystem];
+        const { expected, version, repositoryUrl } = scenario;
         const sut = create((params) => params
           .withVersion(new VersionStub(version))
           .withRepositoryUrl(repositoryUrl));

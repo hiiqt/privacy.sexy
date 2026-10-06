@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { OsSpecificTerminalLaunchCommandFactory } from '@/infrastructure/CodeRunner/Execution/CommandDefinition/Factory/OsSpecificTerminalLaunchCommandFactory';
 import type { RuntimeEnvironment } from '@/infrastructure/RuntimeEnvironment/RuntimeEnvironment';
 import { RuntimeEnvironmentStub } from '@tests/unit/shared/Stubs/RuntimeEnvironmentStub';
-import { AllSupportedOperatingSystems, type SupportedOperatingSystem } from '@tests/shared/TestCases/SupportedOperatingSystems';
+import { AllSupportedOperatingSystems } from '@tests/shared/TestCases/SupportedOperatingSystems';
 import type { CommandDefinition } from '@/infrastructure/CodeRunner/Execution/CommandDefinition/CommandDefinition';
 import { OperatingSystem } from '@/domain/OperatingSystem';
 import { WindowsVisibleTerminalCommand } from '@/infrastructure/CodeRunner/Execution/CommandDefinition/Commands/WindowsVisibleTerminalCommand';
@@ -12,16 +12,24 @@ import { MacOsVisibleTerminalCommand } from '@/infrastructure/CodeRunner/Executi
 
 describe('OsSpecificTerminalLaunchCommandFactory', () => {
   describe('returns expected definitions for supported operating systems', () => {
-    const testScenarios: Record<SupportedOperatingSystem, Constructible<CommandDefinition>> = {
+    const desktopTestScenarios: Partial<Record<OperatingSystem, Constructible<CommandDefinition>>> = {
       [OperatingSystem.Windows]: WindowsVisibleTerminalCommand,
       [OperatingSystem.Linux]: LinuxVisibleTerminalCommand,
       [OperatingSystem.macOS]: MacOsVisibleTerminalCommand,
     };
-    AllSupportedOperatingSystems.forEach((operatingSystemValue) => {
-      const operatingSystem = operatingSystemValue as SupportedOperatingSystem;
+    AllSupportedOperatingSystems.forEach((operatingSystem) => {
+      const expectedDefinitionType = desktopTestScenarios[operatingSystem];
+      if (!expectedDefinitionType) {
+        it(`throws for mobile guide-only OS: ${OperatingSystem[operatingSystem]}`, () => {
+          // arrange
+          const context = new TestContext().withOperatingSystem(operatingSystem);
+          // act & assert
+          expect(() => context.provideCommandDefinition()).to.throw();
+        });
+        return;
+      }
       it(`${OperatingSystem[operatingSystem]}`, () => {
         // arrange
-        const expectedDefinitionType = testScenarios[operatingSystem];
         const context = new TestContext()
           .withOperatingSystem(operatingSystem);
         // act

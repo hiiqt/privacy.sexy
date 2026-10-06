@@ -249,6 +249,7 @@ actions:
         code: |-
           # Use the Auditor app from the GrapheneOS app repository.
           # Remote service: https://attestation.app
+          adb shell getprop ro.boot.verifiedbootstate
       -
         name: Do not unlock the bootloader on a daily-driver device
         recommend: strict

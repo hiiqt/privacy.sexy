@@ -35,7 +35,7 @@ export default defineComponent({
   },
 });
 
-function getInstructionsComponent(operatingSystem: OperatingSystem): Component {
+function getInstructionsComponent(operatingSystem: OperatingSystem): Component | null {
   switch (operatingSystem) {
     case OperatingSystem.macOS:
       return MacOsInstructions;
@@ -43,6 +43,9 @@ function getInstructionsComponent(operatingSystem: OperatingSystem): Component {
       return LinuxInstructions;
     case OperatingSystem.Windows:
       return WindowsInstructions;
+    case OperatingSystem.Android:
+    case OperatingSystem.GrapheneOS:
+      return null; // Mobile guide-only: no script download instructions
     default:
       throw new Error(`No instructions for the operating system: ${OperatingSystem[operatingSystem]}`);
   }
