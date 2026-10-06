@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import type { IExpressionsCompiler } from '@/application/Application/Loader/Collections/Compiler/Executable/Script/Compiler/Expressions/IExpressionsCompiler';
 import { ProjectDetailsStub } from '@tests/unit/shared/Stubs/ProjectDetailsStub';
 import { ExpressionsCompilerStub } from '@tests/unit/shared/Stubs/ExpressionsCompilerStub';
-import { itEachAbsentStringValue } from '@tests/unit/shared/TestCases/AbsentTests';
 import { substituteCode } from '@/application/Application/Loader/Collections/Compiler/ScriptMetadata/CodeSubstituter';
 import type { ProjectDetails } from '@/domain/Project/ProjectDetails';
 import type { FunctionCallArgumentFactory } from '@/application/Application/Loader/Collections/Compiler/Executable/Script/Compiler/Function/Call/Argument/FunctionCallArgument';
@@ -10,17 +9,13 @@ import { FunctionCallArgumentFactoryStub } from '@tests/unit/shared/Stubs/Functi
 
 describe('CodeSubstituter', () => {
   describe('substituteCode', () => {
-    describe('throws if code is empty', () => {
-      itEachAbsentStringValue((emptyCode) => {
-        // arrange
-        const expectedError = 'missing code';
-        const context = new TestContext()
-          .withCode(emptyCode);
-        // act
-        const act = () => context.substitute();
-        // assert
-        expect(act).to.throw(expectedError);
-      }, { excludeNull: true, excludeUndefined: true });
+    it('returns empty string when code is empty string', () => {
+      // arrange — empty endCode is valid for mobile collections that need no end boilerplate
+      const context = new TestContext().withCode('');
+      // act
+      const result = context.substitute();
+      // assert
+      expect(result).to.equal('');
     });
     describe('substitutes parameters as expected values', () => {
       // arrange

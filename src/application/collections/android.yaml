@@ -1,0 +1,285 @@
+# yaml-language-server: $schema=./.schema.yaml
+
+# Android Privacy Guide — advice-only collection.
+# The 'code' fields hold reference ADB commands / settings paths for documentation.
+# The webapp never executes these. 'docs' is the user-facing product.
+
+os: android
+scripting:
+  language: shellscript
+  startCode: "# Android privacy guide — reference commands only. Do not run as a script."
+  endCode: ""
+actions:
+  -
+    category: App Permissions
+    docs: |-
+      Android grants apps permission to access sensitive data and hardware. Reviewing
+      and tightening these permissions is one of the highest-impact things you can do
+      for your privacy.
+    children:
+      -
+        name: Revoke location permission from apps that don't need it
+        recommend: standard
+        docs: |-
+          Every app that holds a location permission can track where you are — even in
+          the background. Go to Settings → Privacy → Permission manager → Location and
+          revoke access for any app where location is not essential to its core function.
+          Choose "Only while using the app" over "Allow all the time" wherever possible.
+        code: |-
+          # View apps with location permission
+          adb shell pm list permissions -g -d | grep location
+        revertCode: ""
+      -
+        name: Disable microphone and camera access for unused apps
+        recommend: standard
+        docs: |-
+          Apps with microphone or camera permission can activate them at any time.
+          Go to Settings → Privacy → Permission manager and audit both. Remove access
+          from any app that has no obvious reason to need it.
+        code: |-
+          # List apps with camera permission
+          adb shell pm list permissions android.permission.CAMERA
+      -
+        name: Restrict contacts access to apps that genuinely need it
+        recommend: standard
+        docs: |-
+          Your contacts list is a social graph — it reveals who you know, their phone
+          numbers, and email addresses. Many apps request contacts access for "sync"
+          features you may not use. Go to Settings → Privacy → Permission manager →
+          Contacts and revoke access from any app where it is not essential.
+        code: |-
+          # List apps holding READ_CONTACTS permission
+          adb shell appops query-op READ_CONTACTS allow
+      -
+        name: Remove "All files access" from every non-essential app
+        recommend: strict
+        docs: |-
+          The MANAGE_EXTERNAL_STORAGE permission gives an app read/write access to
+          everything on your storage — photos, documents, downloads. Revoke it from
+          any app that is not a file manager or backup tool.
+          Settings → Apps → [App name] → Permissions → Files and media.
+        code: |-
+          adb shell appops get <package> MANAGE_EXTERNAL_STORAGE
+  -
+    category: Network & Connectivity
+    docs: |-
+      Network access is the primary route by which apps exfiltrate data. Limiting
+      unnecessary connectivity reduces your exposure.
+    children:
+      -
+        name: Turn off Wi-Fi and Bluetooth when not in use
+        recommend: standard
+        docs: |-
+          Wi-Fi and Bluetooth radios continuously broadcast probe requests that can be
+          used to track your location even without a GPS fix. Disable them from the
+          quick-settings panel whenever you are not actively using them.
+        code: |-
+          adb shell svc wifi disable
+          adb shell svc bluetooth disable
+      -
+        name: Use a private DNS provider (DNS-over-TLS)
+        recommend: standard
+        docs: |-
+          By default your DNS queries are sent in plain text to your carrier, exposing
+          every hostname you visit. Android 9+ supports Private DNS (DNS-over-TLS).
+          Go to Settings → Network & internet → Private DNS and enter a provider such
+          as dns.quad9.net or dns.adguard-dns.com.
+        code: |-
+          adb shell settings put global private_dns_mode hostname
+          adb shell settings put global private_dns_specifier dns.quad9.net
+      -
+        name: Disable Wi-Fi scanning and Bluetooth scanning
+        recommend: strict
+        docs: |-
+          Android lets apps and the system scan for nearby Wi-Fi networks and Bluetooth
+          devices even when those radios are off, for location purposes. Disable both:
+          Settings → Location → Wi-Fi and Bluetooth scanning.
+        code: |-
+          adb shell settings put global wifi_scan_always_enabled 0
+          adb shell settings put global ble_scan_always_enabled 0
+      -
+        name: Enable always-on VPN with kill switch
+        recommend: strict
+        docs: |-
+          A VPN encrypts your traffic and hides your IP address from websites and your
+          carrier. "Always-on" mode ensures no traffic leaves your phone outside the
+          tunnel. "Block connections without VPN" (the kill switch) prevents leaks if
+          the VPN connection drops. Go to Settings → Network & internet → VPN →
+          tap the cog next to your VPN → enable "Always-on VPN" and
+          "Block connections without VPN".
+        code: |-
+          # Always-on VPN is managed through the VPN settings UI or an MDM profile.
+          # To view current VPN configuration via ADB:
+          adb shell settings get secure always_on_vpn_app
+      -
+        name: Restrict background data for apps you rarely use
+        recommend: standard
+        docs: |-
+          Apps running in the background can continuously send data about your location,
+          usage, and behaviour even when you are not actively using them. Go to
+          Settings → Apps → [App] → Mobile data & Wi-Fi and disable "Background data".
+          You can also set a global background data restriction in
+          Settings → Network & internet → Data Saver.
+        code: |-
+          # Enable Data Saver (restricts background data globally)
+          adb shell settings put global data_roaming 0
+          # Restrict background data for a specific package
+          adb shell cmd netpolicy set restrict-background true <package>
+  -
+    category: Google Services
+    docs: |-
+      Google services are deeply integrated into Android and collect extensive
+      telemetry by default. The settings below minimise what is sent.
+    children:
+      -
+        name: Disable ad personalisation (Ad ID opt-out)
+        recommend: standard
+        docs: |-
+          Google assigns your device an Advertising ID used to build a profile of your
+          interests across apps. Go to Settings → Privacy → Ads and select
+          "Delete advertising ID" (Android 12+) or enable "Opt out of Ads Personalisation"
+          on older versions.
+        code: |-
+          adb shell settings put secure limit_ad_tracking 1
+      -
+        name: Turn off Google Usage & Diagnostics reporting
+        recommend: standard
+        docs: |-
+          Android sends crash reports and usage statistics to Google by default.
+          Settings → Privacy → Usage & diagnostics — turn this off.
+        code: |-
+          adb shell settings put global checkin_interval 2147483647
+      -
+        name: Disable Google Location History and Web & App Activity
+        recommend: strict
+        docs: |-
+          Google's Location History builds a timeline of everywhere you've been.
+          Web & App Activity records your searches, Assistant interactions, and app usage.
+          Pause both at myaccount.google.com/data-and-privacy, or in
+          Settings → Google → Manage your Google Account → Data & privacy.
+        code: |-
+          # Must be done via Google account settings UI — no ADB equivalent.
+          adb shell settings put global auto_time 0
+  -
+    category: Lock Screen & Biometrics
+    docs: |-
+      Your lock screen is the first line of defence against physical access to your data.
+      These settings ensure that your device is both easy for you to unlock and hard for
+      anyone else.
+    children:
+      -
+        name: Use a strong alphanumeric PIN or passphrase
+        recommend: standard
+        docs: |-
+          A 6-digit PIN has one million combinations; a random 8-character alphanumeric
+          passphrase has hundreds of trillions. Go to Settings → Security → Screen lock
+          and choose Password (alphanumeric). Avoid patterns — they leave smudge traces.
+        code: |-
+          # Lock screen type can be checked but not set via ADB for security reasons.
+          adb shell settings get secure lockscreen.password_type
+      -
+        name: Disable lock screen notifications content
+        recommend: standard
+        docs: |-
+          By default Android shows full notification content on the lock screen, visible
+          to anyone who picks up your phone. Go to Settings → Notifications → Notifications
+          on lock screen and select "Hide silent conversations and notifications" or
+          "Don't show notifications at all".
+        code: |-
+          adb shell settings put secure lock_screen_show_notifications 0
+          adb shell settings put secure lock_screen_allow_private_notifications 0
+      -
+        name: Set biometrics as convenience only — not primary authentication
+        recommend: standard
+        docs: |-
+          Fingerprint and face unlock are convenient but weaker than a strong passphrase:
+          a court can compel you to place your finger on a phone; they generally cannot
+          compel you to reveal a memorised passphrase. Use biometrics for everyday
+          convenience but understand that your PIN/passphrase is your true secret.
+          In high-risk situations (border crossings, protests), power off the device to
+          force a PIN on next unlock. Settings → Security → Biometrics.
+        code: |-
+          # Biometric configuration is managed in Settings → Security → Fingerprint / Face unlock.
+          # To disable biometrics entirely via ADB (requires USB debugging):
+          adb shell settings put secure biometric_enabled_for_apps 0
+      -
+        name: Set a short screen lock timeout
+        recommend: standard
+        docs: |-
+          The longer your screen stays unlocked, the longer the window for someone to
+          pick up your phone and access your data. Set your screen timeout to 30 seconds
+          or less and ensure the lock engages immediately when the screen turns off.
+          Settings → Display → Screen timeout, and Settings → Security →
+          Lock after screen timeout → Immediately.
+        code: |-
+          # Set screen off timeout to 30 seconds
+          adb shell settings put system screen_off_timeout 30000
+  -
+    category: Account & Authentication Security
+    docs: |-
+      Securing your accounts with strong, unique credentials and a second factor means
+      that a stolen password alone is not enough for an attacker to take over your life.
+    children:
+      -
+        name: Use a password manager instead of reusing passwords
+        recommend: standard
+        docs: |-
+          Reusing the same password across sites means one breach exposes all your
+          accounts. A password manager generates and stores unique, random passwords
+          for every service. Good options include Bitwarden (open source, free) and
+          1Password. Install one and start migrating your most critical accounts first.
+        code: |-
+          # No ADB equivalent — this is a habit and software choice.
+          adb shell pm list packages -3
+      -
+        name: Enable two-factor authentication on critical accounts
+        recommend: standard
+        docs: |-
+          Two-factor authentication (2FA) requires a second proof of identity — usually
+          a time-based code — in addition to your password. Even if your password is
+          stolen, an attacker cannot log in without the second factor. Use an app-based
+          authenticator (Aegis Authenticator on Android is open source and encrypted) rather
+          than SMS, which is vulnerable to SIM-swapping attacks.
+          Enable 2FA in your account security settings for email, banking, and social media.
+        code: |-
+          # No ADB equivalent — enable 2FA through each service's account settings.
+          adb shell pm list packages -3
+  -
+    category: App Hygiene
+    docs: |-
+      Reducing the number of installed apps, and keeping them current, is one of the
+      simplest ways to shrink your attack surface.
+    children:
+      -
+        name: Uninstall or disable apps you don't use
+        recommend: standard
+        docs: |-
+          Every installed app is a potential data-collection surface, even if you never
+          open it. Review your app list and uninstall anything unused. For pre-installed
+          apps that cannot be uninstalled, disable them: Settings → Apps → [App] → Disable.
+        code: |-
+          # List all user-installed packages
+          adb shell pm list packages -3
+          # Disable a package (requires root or ADB)
+          adb shell pm disable-user --user 0 <package>
+      -
+        name: Keep apps updated
+        recommend: standard
+        docs: |-
+          App updates frequently patch security vulnerabilities. Enable automatic updates
+          in the Play Store: Play Store → Profile icon → Settings → Network preferences →
+          Auto-update apps → Over any network (or Wi-Fi only).
+        code: |-
+          # No ADB command — managed through Play Store settings.
+          adb shell pm list packages -3
+      -
+        name: Use a work profile to isolate high-risk apps
+        recommend: strict
+        docs: |-
+          Android's work profile feature (available on stock Android via apps like
+          Shelter or Island) creates an isolated sandbox. Apps inside the profile cannot
+          see your personal apps, contacts, or files. Install apps like social media or
+          banking inside the work profile to contain their access.
+        code: |-
+          # Work profile setup is UI-only; managed via device policy.
+          adb shell pm list users

@@ -20,7 +20,8 @@ export const substituteCode: CodeSubstituter = (
   projectDetails,
   utilities = DefaultUtilities,
 ) => {
-  if (!code) { throw new Error('missing code'); }
+  if (code === undefined || code === null) { throw new Error('missing code'); }
+  if (code === '') { return ''; }
   const args = new FunctionCallArgumentCollection();
   const substitute = (name: string, value: string) => args
     .addArgument(utilities.createCallArgument(name, value));

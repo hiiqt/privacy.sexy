@@ -2,6 +2,8 @@
 import WindowsData from '@/application/collections/windows.yaml';
 import MacOsData from '@/application/collections/macos.yaml';
 import LinuxData from '@/application/collections/linux.yaml';
+import AndroidData from '@/application/collections/android.yaml';
+import GrapheneOsData from '@/application/collections/grapheneos.yaml';
 import type { CollectionData } from '@/application/collections/';
 import type { CollectionDataProvider } from './CollectionDataProvider';
 
@@ -15,6 +17,8 @@ const PreloadedCollectionNames = [
   'windows',
   'macos',
   'linux',
+  'android',
+  'grapheneos',
 ] as const;
 
 type PreloadedCollectionNameTuple = typeof PreloadedCollectionNames;
@@ -29,6 +33,8 @@ const PreloadedData: Record<PreloadedCollectionName, CollectionData> = {
   windows: WindowsData,
   macos: MacOsData,
   linux: LinuxData,
+  android: AndroidData,
+  grapheneos: GrapheneOsData,
 };
 
 function assertSupported(name: string): asserts name is PreloadedCollectionName {

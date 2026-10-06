@@ -5,6 +5,13 @@ export enum OperatingSystem {
   KaiOS,
   ChromeOS,
   Android,
+
+  /**
+   * GrapheneOS: Android-based, privacy and security focused OS.
+   * Actively maintained; successor to CopperheadOS.
+   */
+  GrapheneOS,
+
   iOS,
   iPadOS,
 

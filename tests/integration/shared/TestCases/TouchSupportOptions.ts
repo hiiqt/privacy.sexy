@@ -8,6 +8,7 @@ enum TouchSupportState {
 
 const TouchSupportPerOperatingSystem: Record<OperatingSystem, TouchSupportState> = {
   [OperatingSystem.Android]: TouchSupportState.AlwaysSupported,
+  [OperatingSystem.GrapheneOS]: TouchSupportState.AlwaysSupported,
   [OperatingSystem.iOS]: TouchSupportState.AlwaysSupported,
   [OperatingSystem.iPadOS]: TouchSupportState.AlwaysSupported,
   [OperatingSystem.ChromeOS]: TouchSupportState.AlwaysSupported,

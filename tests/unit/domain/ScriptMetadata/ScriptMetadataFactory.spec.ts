@@ -89,17 +89,13 @@ describe('ScriptMetadataFactory', () => {
       // assert
       expect(sut.endCode).to.equal(expected);
     });
-    describe('throws when absent', () => {
-      itEachAbsentStringValue((absentValue) => {
-        // arrange
-        const expectedError = 'missing end code';
-        // act
-        const act = () => new ScriptingDefinitionBuilder()
-          .withEndCode(absentValue)
-          .create();
-        // assert
-        expect(act).to.throw(expectedError);
-      }, { excludeNull: true, excludeUndefined: true });
+    it('allows empty string — mobile collections have no end boilerplate', () => {
+      // arrange
+      const sut = new ScriptingDefinitionBuilder()
+        .withEndCode('')
+        .create();
+      // assert
+      expect(sut.endCode).to.equal('');
     });
   });
 });

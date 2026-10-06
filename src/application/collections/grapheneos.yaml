@@ -1,0 +1,261 @@
+# yaml-language-server: $schema=./.schema.yaml
+
+# GrapheneOS Privacy Guide — advice-only collection.
+# Assumes the user has already reviewed the Android guide.
+# These scripts cover features unique to GrapheneOS; do not duplicate Android guidance.
+# The 'code' fields hold reference ADB commands or settings paths for documentation only.
+# The webapp never executes these.
+
+os: grapheneos
+scripting:
+  language: shellscript
+  startCode: "# GrapheneOS privacy guide — reference commands only. Do not run as a script."
+  endCode: ""
+actions:
+  -
+    category: Sandboxed Google Play
+    docs: |-
+      GrapheneOS lets you run Google Play Services inside an isolated sandbox with no
+      special OS privileges — unlike stock Android where Play Services has deep system
+      access. This section covers hardening that sandbox.
+    children:
+      -
+        name: Install Google Play in a separate user profile, not the owner profile
+        recommend: strict
+        docs: |-
+          GrapheneOS supports multiple user profiles. Installing Google Play in a
+          secondary profile keeps it completely isolated from your main apps and data.
+          If Play Services misbehaves or is compromised, your owner profile is unaffected.
+          Go to Settings → System → Multiple users → Add user, then install Play only
+          in that profile.
+        code: |-
+          # User profiles are managed in Settings UI.
+          # To list existing profiles via ADB:
+          adb shell pm list users
+        revertCode: ""
+      -
+        name: Revoke network access from Sandboxed Play Services
+        recommend: strict
+        docs: |-
+          GrapheneOS gives you per-app network permission toggles. You can deny network
+          access to Google Play Services itself while still allowing the apps that depend
+          on it. Go to Settings → Apps → Google Play Services → Permissions → Network
+          and toggle off "Network".
+        code: |-
+          # GrapheneOS per-app network toggle (UI only — no ADB shortcut).
+          adb shell pm list packages -3
+      -
+        name: Limit Play Store to installing apps only, not background updates
+        recommend: strict
+        docs: |-
+          With Sandboxed Play, the Play Store does not have privileged installer rights.
+          You can further limit it by removing its background network access, forcing
+          updates to happen only when you explicitly open the Play Store.
+          Settings → Apps → Google Play Store → Permissions → Network →
+          "Remove network access" or set to "Only while using the app".
+        code: |-
+          # GrapheneOS per-app network toggle (UI only).
+          # Check package name: com.android.vending
+          adb shell appops get com.android.vending INTERNET
+  -
+    category: Network Permission Toggle
+    docs: |-
+      GrapheneOS adds a Network permission toggle absent from stock Android. Every app
+      can be denied internet access entirely, regardless of what permissions it declares.
+    children:
+      -
+        name: Remove network access from apps that don't need the internet
+        recommend: standard
+        docs: |-
+          Many apps — calculators, offline games, local file managers — have no
+          legitimate need for network access but request it anyway. In GrapheneOS go to
+          Settings → Apps → [App] → Permissions and disable "Network". The app continues
+          to work; it simply cannot phone home.
+        code: |-
+          # GrapheneOS-specific; not available on stock Android.
+          # View via ADB (read-only):
+          adb shell appops get <package> INTERNET
+      -
+        name: Remove network access from keyboard apps
+        recommend: strict
+        docs: |-
+          A keyboard app with network access can exfiltrate everything you type.
+          Unless you are using a cloud-sync keyboard feature intentionally, disable
+          network for your keyboard app in Settings → Apps → [Keyboard app] → Permissions.
+        code: |-
+          adb shell appops get <keyboard_package> INTERNET
+  -
+    category: Sensors Permission Toggle
+    docs: |-
+      GrapheneOS adds a Sensors permission that controls access to the accelerometer,
+      gyroscope, and other motion/environmental sensors. Stock Android has no equivalent.
+    children:
+      -
+        name: Remove sensors access from apps that don't need it
+        recommend: standard
+        docs: |-
+          Motion sensors can be used to infer your activity, location, and even
+          keystrokes. Most apps have no need for them. Go to Settings → Apps → [App] →
+          Permissions → Sensors and revoke access for any app where it is not required.
+        code: |-
+          # GrapheneOS-specific toggle — visible in per-app permission settings.
+          adb shell appops get <package> android.permission.SENSORS
+  -
+    category: Storage Scopes & Contact Scopes
+    docs: |-
+      GrapheneOS introduced Storage Scopes and Contact Scopes to make it possible to
+      grant an app limited access to only the specific files or contacts it actually needs,
+      rather than your entire library. This is a major privacy improvement over stock Android.
+    children:
+      -
+        name: Use Storage Scopes to limit file access to specific folders
+        recommend: standard
+        docs: |-
+          When an app requests broad storage access, GrapheneOS lets you redirect it to
+          a scoped folder instead of your whole storage. The app can only see and write
+          to that folder — not your photos, downloads, or documents.
+          Settings → Apps → [App] → Storage Scopes — enable and configure the scope.
+          This is especially useful for apps that only need to handle their own files.
+        code: |-
+          # Storage Scopes is a GrapheneOS UI feature with no direct ADB equivalent.
+          adb shell pm list packages -3
+      -
+        name: Use Contact Scopes to share only specific contacts with an app
+        recommend: standard
+        docs: |-
+          Contact Scopes lets you grant an app contacts permission while limiting it to
+          only the contacts you explicitly choose — not your entire address book.
+          This is invaluable for messaging or calling apps that only need a handful of
+          contacts. Settings → Apps → [App] → Contact Scopes — enable and select contacts.
+        code: |-
+          # Contact Scopes is a GrapheneOS UI feature with no direct ADB equivalent.
+          adb shell pm list packages -3
+  -
+    category: Exploit Protection
+    docs: |-
+      GrapheneOS includes hardened memory allocation, stronger compiler mitigations, and
+      additional exploit protection toggles not found in stock Android.
+    children:
+      -
+        name: Enable native code debugging protection
+        recommend: strict
+        docs: |-
+          GrapheneOS can restrict ptrace (native code debugger attach) to prevent
+          malicious apps or an attacker with code execution from using debugging APIs
+          to inspect or manipulate other processes.
+          Settings → Security → Enable native code debugging → off (restricts to system).
+        code: |-
+          # Controlled via GrapheneOS Security settings UI.
+          adb shell settings get global ptrace_scope
+      -
+        name: Keep auto-reboot timer enabled
+        recommend: standard
+        docs: |-
+          GrapheneOS ships with an auto-reboot timer (default: 72 hours). After a reboot
+          the device returns to a Before First Unlock state, where the file system is
+          encrypted and the attack surface for forensic extraction tools is minimised.
+          Settings → Security → Auto reboot — leave this enabled.
+        code: |-
+          # Managed in Settings → Security → Auto reboot.
+          adb shell settings get global settings_namespace_version
+      -
+        name: Understand the hardened memory allocator (hardened_malloc)
+        recommend: standard
+        docs: |-
+          GrapheneOS ships with hardened_malloc, a memory allocator that significantly
+          raises the difficulty of heap exploitation attacks. It is always active — you
+          do not need to enable it. Its presence means common exploit techniques that
+          work on stock Android are defeated by default. No configuration is required,
+          but knowing it exists helps you understand why GrapheneOS is more resistant to
+          browser and app exploits than stock Android.
+        code: |-
+          # hardened_malloc is a system-level component — no user configuration needed.
+          adb shell getprop ro.product.build.type
+  -
+    category: Secure Lock Screen (GrapheneOS extras)
+    docs: |-
+      GrapheneOS adds lock screen security features that go beyond what stock Android
+      offers, including PIN scrambling and a duress password.
+    children:
+      -
+        name: Enable PIN scrambling to defeat shoulder-surfing
+        recommend: standard
+        docs: |-
+          By default, the PIN pad always shows digits in the same positions, making it
+          easy for someone watching over your shoulder to learn your PIN from your finger
+          movements. GrapheneOS offers a "Scramble PIN input layout" option that
+          randomises the digit positions on every unlock attempt.
+          Settings → Security → Scramble PIN input layout — turn this on.
+        code: |-
+          # Managed in: Settings → Security → Scramble PIN input layout
+          adb shell settings get secure lockscreen.password_type
+      -
+        name: Set a duress PIN to wipe the device under coercion
+        recommend: strict
+        docs: |-
+          GrapheneOS lets you configure a secondary "duress password". If you enter it,
+          the device immediately wipes itself — useful if you are ever forced to unlock
+          your phone under duress. Set a duress password that is different from your
+          real unlock code but memorable enough to use in a stressful situation.
+          Settings → Security → Duress password.
+        code: |-
+          # Managed in: Settings → Security → Duress password
+          adb shell settings get secure lockscreen.password_type
+  -
+    category: Secure Camera & Microphone
+    docs: |-
+      GrapheneOS includes its own hardened camera app and gives you quick hardware-level
+      indicators for when the camera or microphone is in use.
+    children:
+      -
+        name: Use the GrapheneOS Camera app instead of third-party apps
+        recommend: standard
+        docs: |-
+          The GrapheneOS Camera app is open source and requests only the permissions it
+          genuinely needs. Third-party camera apps often request access to location,
+          contacts, storage, and microphone far beyond what taking a photo requires.
+          Using the built-in GrapheneOS Camera means your photos stay local by default.
+        code: |-
+          # No ADB command needed — switch to the pre-installed GrapheneOS Camera app.
+          adb shell pm list packages org.grapheneos.camera
+      -
+        name: Use hardware camera/microphone toggles when available
+        recommend: strict
+        docs: |-
+          Some Pixel devices have a hardware privacy mode for camera and microphone
+          (accessible via the quick settings panel) that physically disables the sensors
+          at a firmware level. GrapheneOS supports these toggles where the hardware allows.
+          Enabled: Quick Settings → Camera access / Microphone access — toggle off when
+          not recording. This goes further than an app permission — no app can use the
+          sensor until you re-enable it.
+        code: |-
+          # Hardware camera/microphone toggles are managed in Quick Settings.
+          # Check current state via ADB:
+          adb shell settings get secure camera_disabled
+  -
+    category: Attestation & Verified Boot
+    docs: |-
+      GrapheneOS preserves Android Verified Boot and supports hardware attestation,
+      letting you (and apps) confirm the OS has not been tampered with.
+    children:
+      -
+        name: Verify your device passes hardware attestation
+        recommend: standard
+        docs: |-
+          GrapheneOS provides an Auditor app (and remote attestation service at
+          attestation.app) that uses hardware-backed keys to prove the OS is genuine
+          and unmodified. Run a self-check or pair with a trusted device periodically
+          to confirm integrity.
+        code: |-
+          # Use the Auditor app from the GrapheneOS app repository.
+          # Remote service: https://attestation.app
+      -
+        name: Do not unlock the bootloader on a daily-driver device
+        recommend: strict
+        docs: |-
+          Unlocking the bootloader disables Verified Boot and removes the hardware
+          root of trust. On GrapheneOS, re-locking the bootloader after installation
+          restores these protections. Confirm your bootloader is locked:
+          Settings → About phone → scroll to "Device is locked" status.
+        code: |-
+          adb shell getprop ro.boot.verifiedbootstate

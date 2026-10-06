@@ -9,7 +9,7 @@ describe('PreloadedCollectionDataProvider', () => {
     // arrange
     const testScenarios: Record<SupportedOperatingSystem, {
       readonly validCollectionName: string;
-    }> = {
+    }> & Record<string, { readonly validCollectionName: string }> = {
       [OperatingSystem.macOS]: {
         validCollectionName: 'macos',
       },
@@ -18,6 +18,12 @@ describe('PreloadedCollectionDataProvider', () => {
       },
       [OperatingSystem.Linux]: {
         validCollectionName: 'linux',
+      },
+      [OperatingSystem.Android]: {
+        validCollectionName: 'android',
+      },
+      [OperatingSystem.GrapheneOS]: {
+        validCollectionName: 'grapheneos',
       },
     };
     Object.values(testScenarios)

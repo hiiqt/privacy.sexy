@@ -2,7 +2,9 @@ import { OperatingSystem } from '@/domain/OperatingSystem';
 
 export type SupportedOperatingSystem = OperatingSystem.Windows
 | OperatingSystem.Linux
-| OperatingSystem.macOS;
+| OperatingSystem.macOS
+| OperatingSystem.Android
+| OperatingSystem.GrapheneOS;
 
 export const AllSupportedOperatingSystems: readonly (
   OperatingSystem & SupportedOperatingSystem
@@ -10,4 +12,6 @@ export const AllSupportedOperatingSystems: readonly (
   OperatingSystem.Windows,
   OperatingSystem.Linux,
   OperatingSystem.macOS,
+  OperatingSystem.Android,
+  OperatingSystem.GrapheneOS,
 ] as const;

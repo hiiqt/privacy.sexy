@@ -15,7 +15,9 @@ export const createScriptMetadata: ScriptMetadataFactory = (
   parameters,
 ) => {
   validateCode(parameters.startCode, 'start code');
-  validateCode(parameters.endCode, 'end code');
+  if (parameters.endCode !== '') {
+    validateCode(parameters.endCode, 'end code');
+  }
   return {
     language: parameters.language,
     startCode: parameters.startCode,

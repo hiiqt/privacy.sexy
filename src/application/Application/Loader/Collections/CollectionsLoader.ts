@@ -15,7 +15,7 @@ export const loadCollections: CollectionsLoader = (
   projectDetails,
   utilities = DefaultUtilities,
 ) => {
-  const collectionNames: readonly string[] = ['macos', 'windows', 'linux'];
+  const collectionNames: readonly string[] = ['macos', 'windows', 'linux', 'android', 'grapheneos'];
   const collectionsData = collectionNames.map((name) => utilities.loadCollectionFile(name));
   const collections = collectionsData.map(
     (collection) => utilities.parseCategoryCollection(collection, projectDetails),

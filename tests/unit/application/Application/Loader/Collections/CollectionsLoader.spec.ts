@@ -18,10 +18,12 @@ describe('CollectionsLoader', () => {
   describe('loadCollections', () => {
     it('loads all expected collections', () => {
       // arrange
-      const collectionNames: Record<SupportedOperatingSystem, string> = {
+      const collectionNames: Record<SupportedOperatingSystem, string> & Record<string, string> = {
         [OperatingSystem.macOS]: 'macos',
         [OperatingSystem.Windows]: 'windows',
         [OperatingSystem.Linux]: 'linux',
+        [OperatingSystem.Android]: 'android',
+        [OperatingSystem.GrapheneOS]: 'grapheneos',
       };
       const providerStub = new CollectionDataProviderStub();
       const context = new TestContext()
@@ -35,10 +37,12 @@ describe('CollectionsLoader', () => {
     });
     it('parses all loaded collections', () => {
       // arrange
-      const loadedCollectionData: Record<SupportedOperatingSystem, CollectionData> = {
+      const loadedCollectionData: Record<SupportedOperatingSystem, CollectionData> & Record<string, CollectionData> = {
         [OperatingSystem.macOS]: new CollectionDataStub().withOs('macos'),
         [OperatingSystem.Windows]: new CollectionDataStub().withOs('windows'),
         [OperatingSystem.Linux]: new CollectionDataStub().withOs('linux'),
+        [OperatingSystem.Android]: new CollectionDataStub().withOs('android'),
+        [OperatingSystem.GrapheneOS]: new CollectionDataStub().withOs('grapheneos'),
       };
       const compiler = new CollectionCompilerStub();
       const expectedData = Object.values(loadedCollectionData);
@@ -59,10 +63,12 @@ describe('CollectionsLoader', () => {
     });
     it('returns parsed collections', () => {
       // arrange
-      const parsedCollectionData: Record<SupportedOperatingSystem, CategoryCollection> = {
+      const parsedCollectionData: Record<SupportedOperatingSystem, CategoryCollection> & Record<string, CategoryCollection> = {
         [OperatingSystem.macOS]: new CategoryCollectionStub().withOs(OperatingSystem.macOS),
         [OperatingSystem.Windows]: new CategoryCollectionStub().withOs(OperatingSystem.Windows),
         [OperatingSystem.Linux]: new CategoryCollectionStub().withOs(OperatingSystem.Linux),
+        [OperatingSystem.Android]: new CategoryCollectionStub().withOs(OperatingSystem.Android),
+        [OperatingSystem.GrapheneOS]: new CategoryCollectionStub().withOs(OperatingSystem.GrapheneOS),
       };
       const expectedCollections = Object.values(parsedCollectionData);
       const compiler = new CollectionCompilerStub()
