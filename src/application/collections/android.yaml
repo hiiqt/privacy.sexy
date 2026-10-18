@@ -24,12 +24,10 @@ actions:
           Path: Settings → Privacy → Permission manager → Location
           Affects: 📍 GPS location · 📡 Cell tower triangulation · 🗺️ Background tracking
 
-          Every app that holds a location permission can track where you are — even in
-          the background. Most apps have no legitimate reason to know where you are.
-          Go to Settings → Privacy → Permission manager → Location and revoke access for
-          any app where location is not essential to its core function (maps, navigation,
-          weather are obvious exceptions). Choose "Only while using the app" over
-          "Allow all the time" wherever possible to block background tracking.
+          Every app that holds a location permission can track where you are — even in the background. Most apps have no legitimate reason to know where you are.
+          - Go to Settings → Privacy → Permission manager → Location
+          - revoke access for any app where location is not essential to its core function (maps, navigation, weather are obvious exceptions).
+          - Choose "Only while using the app" over "Allow all the time" wherever possible to block background tracking.
         code: |-
           # View apps with location permission
           adb shell pm list permissions -g -d | grep location

@@ -1,19 +1,18 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!--
   MobileScriptCard — renders a single script as an advice card.
-  Displays:
-  - Checkbox + name row
-  - Setting location row (Path: line from docs)
-  - Expandable plain-English description (collapsed by default)
-  - Side-by-side row: affects chips (left) + reference command (right)
-  A checkbox lets users mark guides as done; state is backed by
-  UserSelection (in-memory) and persisted to localStorage via the
-  checklist:toggle event handled in MobileGuideLayout.
+  Card order (top → bottom):
+  1. Checkbox + title
+  2. Path row  (⚙️ icon + path text)
+  3. Affects row  ("Affects:" label + blue pill chips)
+  4. Details dropdown  (collapsed; prose paragraphs + "- " bullet lines)
+  5. Reference command  (full-width, Copy button)
+  Checkbox state is backed by UserSelection and persisted via checklist:toggle.
   No "Run" button — this is a guide, not an executor.
 -->
 <template>
   <article class="card" :class="{ 'card--checked': isChecked }">
-    <!-- Checkbox + Script name row -->
+    <!-- 1. Checkbox + title -->
     <label class="card__title-row">
       <input
         class="card__checkbox"
@@ -25,25 +24,36 @@
       <span class="card__name" :class="{ 'card__name--done': isChecked }">{{ script.name }}</span>
     </label>
 
-    <!-- Setting location row (Path: line) -->
+    <!-- 2. Path row -->
     <div v-if="settingPath" class="card__path">
-      <span class="card__path-icon" aria-hidden="true">📍</span>
+      <span class="card__path-icon" aria-hidden="true">⚙️</span>
       <span class="card__path-text">{{ settingPath }}</span>
     </div>
 
-    <!-- Expandable description -->
-    <div v-if="descriptionLines.length" class="card__details">
+    <!-- 3. Affects row -->
+    <div v-if="affectsBullets.length" class="card__affects-row">
+      <span class="card__affects-label">Affects:</span>
+      <ul class="card__affects" aria-label="What this setting governs">
+        <li
+          v-for="(bullet, i) in affectsBullets"
+          :key="i"
+          class="card__affects-item"
+        >{{ bullet }}</li>
+      </ul>
+    </div>
+
+    <!-- 4. Details dropdown -->
+    <div v-if="proseBlocks.length" class="card__details">
       <div
         class="card__details-body"
         :class="{ 'card__details-body--expanded': detailsExpanded }"
       >
-        <p
-          v-for="(line, i) in descriptionLines"
-          :key="i"
-          class="card__docs"
-        >
-          {{ line }}
-        </p>
+        <template v-for="(block, i) in proseBlocks" :key="i">
+          <p v-if="block.type === 'paragraph'" class="card__docs">{{ block.text }}</p>
+          <ul v-else-if="block.type === 'bullets'" class="card__bullets">
+            <li v-for="(item, j) in block.items" :key="j" class="card__bullet-item">{{ item }}</li>
+          </ul>
+        </template>
       </div>
       <button
         type="button"
@@ -55,41 +65,20 @@
       </button>
     </div>
 
-    <!-- Side-by-side: affects chips (left) + reference command (right) -->
-    <div
-      v-if="affectsBullets.length || script.code.execute"
-      class="card__bottom-row"
-    >
-      <!-- Emoji affects chips -->
-      <ul
-        v-if="affectsBullets.length"
-        class="card__affects"
-        aria-label="What this setting governs"
-      >
-        <li
-          v-for="(bullet, i) in affectsBullets"
-          :key="i"
-          class="card__affects-item"
+    <!-- 5. Reference command (full width) -->
+    <div v-if="script.code.execute" class="card__code-block">
+      <div class="card__code-header">
+        <span class="card__code-label">Reference command</span>
+        <button
+          type="button"
+          class="card__copy-btn"
+          :aria-label="`Copy reference command for ${script.name}`"
+          @click="copy"
         >
-          {{ bullet }}
-        </li>
-      </ul>
-
-      <!-- Reference code block -->
-      <div v-if="script.code.execute" class="card__code-block">
-        <div class="card__code-header">
-          <span class="card__code-label">Reference command</span>
-          <button
-            type="button"
-            class="card__copy-btn"
-            :aria-label="`Copy reference command for ${script.name}`"
-            @click="copy"
-          >
-            {{ copyLabel }}
-          </button>
-        </div>
-        <pre class="card__code"><code>{{ script.code.execute }}</code></pre>
+          {{ copyLabel }}
+        </button>
       </div>
+      <pre class="card__code"><code>{{ script.code.execute }}</code></pre>
     </div>
   </article>
 </template>
@@ -131,15 +120,16 @@ export default defineComponent({
     }
 
     /**
-     * Each YAML `|-` block scalar is parsed as a single string in docs[0].
-     * We split on newlines to find prefix lines then the prose body.
-     *
-     * Expected order inside that string:
-     *   Line 0 (optional): "Path: Settings → …"
-     *   Line 1 (optional): "Affects: A · B · C"
-     *   Blank line
-     *   Remaining lines: prose description
+     * Each YAML `|-` block scalar arrives as a single string in docs[0].
+     * Split on newlines, peel off the optional Path:/Affects: prefix lines,
+     * then convert remaining prose lines into typed blocks:
+     *   - lines starting with "- " → collected into a 'bullets' block
+     *   - all other non-empty lines → individual 'paragraph' blocks
      */
+    type ProseBlock =
+      | { type: 'paragraph'; text: string }
+      | { type: 'bullets'; items: string[] };
+
     function parsedDocs() {
       const raw = (props.script.docs ?? []).join('\n');
       const lines = raw.split('\n');
@@ -163,24 +153,42 @@ export default defineComponent({
 
       // Drop leading blank lines before prose
       while (idx < lines.length && lines[idx].trim() === '') idx += 1;
-      const prose = lines.slice(idx);
-      // Drop trailing blank lines
-      let end = prose.length;
-      while (end > 0 && prose[end - 1].trim() === '') end -= 1;
 
-      return { path, affects, prose: prose.slice(0, end) };
+      // Build typed prose blocks
+      const blocks: ProseBlock[] = [];
+      while (idx < lines.length) {
+        const line = lines[idx];
+        if (line.trim() === '') {
+          idx += 1;
+          continue;
+        }
+        if (line.trimStart().startsWith('- ')) {
+          // Collect consecutive bullet lines into one block
+          const items: string[] = [];
+          while (idx < lines.length && lines[idx].trimStart().startsWith('- ')) {
+            items.push(lines[idx].trimStart().slice(2));
+            idx += 1;
+          }
+          blocks.push({ type: 'bullets', items });
+        } else {
+          blocks.push({ type: 'paragraph', text: line });
+          idx += 1;
+        }
+      }
+
+      return { path, affects, blocks };
     }
 
     const settingPath = computed<string>(() => parsedDocs().path);
     const affectsBullets = computed<string[]>(() => parsedDocs().affects);
-    const descriptionLines = computed<string[]>(() => parsedDocs().prose);
+    const proseBlocks = computed<ProseBlock[]>(() => parsedDocs().blocks);
 
     return {
       copyLabel,
       copy,
       settingPath,
       affectsBullets,
-      descriptionLines,
+      proseBlocks,
       detailsExpanded,
     };
   },
@@ -238,7 +246,7 @@ export default defineComponent({
   display: flex;
   align-items: baseline;
   gap: 0.3rem;
-  margin: 0 0 0.45rem 1.7rem;
+  margin: 0 0 0.35rem 1.7rem;
 }
 
 .card__path-icon {
@@ -253,6 +261,43 @@ export default defineComponent({
   line-height: 1.4;
 }
 
+/* ── Affects row ── */
+.card__affects-row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.4rem;
+  margin: 0 0 0.45rem 1.7rem;
+}
+
+.card__affects-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #3a3a3c);
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1.6;
+  margin-right: 0.15rem;
+}
+
+.card__affects {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.4rem;
+}
+
+.card__affects-item {
+  font-size: 0.75rem;
+  color: var(--affects-color, #007aff);
+  background: rgba(0, 122, 255, 0.18);
+  border: 1px solid rgba(0, 122, 255, 0.45);
+  border-radius: 4px;
+  padding: 0.15rem 0.4rem;
+  white-space: nowrap;
+}
+
 /* ── Expandable description ── */
 .card__details {
   margin: 0 0 0.5rem;
@@ -260,7 +305,6 @@ export default defineComponent({
 
 .card__details-body {
   overflow: hidden;
-  /* Collapsed: show ~2 lines via max-height */
   max-height: 2.8em;
   mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
@@ -268,7 +312,7 @@ export default defineComponent({
 }
 
 .card__details-body--expanded {
-  max-height: 60em; /* large enough for any content */
+  max-height: 60em;
   mask-image: none;
   -webkit-mask-image: none;
   transition: max-height 0.25s ease;
@@ -279,6 +323,18 @@ export default defineComponent({
   font-size: 0.85rem;
   color: var(--text-secondary, #3a3a3c);
   line-height: 1.55;
+}
+
+.card__bullets {
+  margin: 0 0 0.4rem 1.1rem;
+  padding: 0;
+}
+
+.card__bullet-item {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #3a3a3c);
+  line-height: 1.55;
+  margin-bottom: 0.15rem;
 }
 
 .card__details-toggle {
@@ -301,40 +357,9 @@ export default defineComponent({
   outline: none;
 }
 
-/* ── Bottom row: affects chips + code block side by side ── */
-.card__bottom-row {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 0.6rem;
-  margin-top: 0.5rem;
-}
-
-/* ── Affects bullet list ── */
-.card__affects {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.4rem;
-  flex: 0 0 38%;
-  min-width: 0;
-}
-
-.card__affects-item {
-  font-size: 0.75rem;
-  color: var(--affects-color, #007aff);
-  background: var(--affects-bg, rgba(0,122,255,0.07));
-  border-radius: 4px;
-  padding: 0.15rem 0.4rem;
-  white-space: nowrap;
-}
-
-/* Code block takes remaining width */
+/* ── Reference command (full width) ── */
 .card__code-block {
-  flex: 1 1 58%;
-  min-width: 0;
+  margin-top: 0.5rem;
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid #2c2c2e;
@@ -385,22 +410,5 @@ export default defineComponent({
   word-break: break-all;
   line-height: 1.5;
   overflow-x: auto;
-}
-
-/* ── Narrow viewport: stack command under chips ── */
-@media (max-width: 380px) {
-  .card__bottom-row {
-    flex-direction: column;
-  }
-
-  .card__affects {
-    flex: none;
-    width: 100%;
-  }
-
-  .card__code-block {
-    flex: none;
-    width: 100%;
-  }
 }
 </style>
