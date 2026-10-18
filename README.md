@@ -10,11 +10,10 @@ Upstream enforces privacy scripts on desktop. This fork turns its data-driven en
 - **Privacy posture slider** — Standard / Strict filtering matched to your threat model
 - **Interactive checklist** — check off guides as you complete them, progress persists per device ("7 of 21 guides secured")
 - **Reference commands, never execution** — ADB commands and settings paths are shown for you to run yourself; there is no Run button, by design
-- **Official-source directory** — firmware, flashing, and FRP guidance linking only to official sources
 
 ## Live demo
 
-Deploying before the Oct 18 deadline — URL coming soon.
+Live now — https://hiiqt.github.io/privacy.sexy/
 
 ## Tech stack
 
