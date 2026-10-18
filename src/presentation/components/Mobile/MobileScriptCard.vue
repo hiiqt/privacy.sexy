@@ -131,46 +131,49 @@ export default defineComponent({
     }
 
     /**
-     * Parse docs array. The first line may be "Path: …" (setting location).
-     * The second (or first if no Path:) may be "Affects: A · B · C".
-     * Remaining non-empty lines become the expandable description.
+     * Each YAML `|-` block scalar is parsed as a single string in docs[0].
+     * We split on newlines to find prefix lines then the prose body.
+     *
+     * Expected order inside that string:
+     *   Line 0 (optional): "Path: Settings → …"
+     *   Line 1 (optional): "Affects: A · B · C"
+     *   Blank line
+     *   Remaining lines: prose description
      */
-    const settingPath = computed<string>(() => {
-      const docs = props.script.docs ?? [];
-      if (!docs.length) return '';
-      const first = docs[0].trim();
-      if (!first.startsWith('Path:')) return '';
-      return first.replace(/^Path:\s*/, '');
-    });
+    function parsedDocs() {
+      const raw = (props.script.docs ?? []).join('\n');
+      const lines = raw.split('\n');
+      let idx = 0;
 
-    const affectsBullets = computed<string[]>(() => {
-      const docs = props.script.docs ?? [];
-      if (!docs.length) return [];
-      // Skip Path: line if present
-      const startIdx = docs[0]?.trim().startsWith('Path:') ? 1 : 0;
-      const candidate = docs[startIdx]?.trim() ?? '';
-      if (!candidate.startsWith('Affects:')) return [];
-      return candidate
-        .replace(/^Affects:\s*/, '')
-        .split('·')
-        .map((s) => s.trim())
-        .filter(Boolean);
-    });
+      let path = '';
+      if (lines[idx]?.trim().startsWith('Path:')) {
+        path = lines[idx].trim().replace(/^Path:\s*/, '');
+        idx += 1;
+      }
 
-    const descriptionLines = computed<string[]>(() => {
-      const docs = props.script.docs ?? [];
-      if (!docs.length) return [];
-      let start = 0;
-      // Skip Path: line
-      if (docs[start]?.trim().startsWith('Path:')) start += 1;
-      // Skip Affects: line
-      if (docs[start]?.trim().startsWith('Affects:')) start += 1;
-      const rest = docs.slice(start);
-      // Drop leading empty lines
-      let trim = 0;
-      while (trim < rest.length && rest[trim].trim() === '') trim++;
-      return rest.slice(trim);
-    });
+      let affects: string[] = [];
+      if (lines[idx]?.trim().startsWith('Affects:')) {
+        affects = lines[idx].trim()
+          .replace(/^Affects:\s*/, '')
+          .split('·')
+          .map((s) => s.trim())
+          .filter(Boolean);
+        idx += 1;
+      }
+
+      // Drop leading blank lines before prose
+      while (idx < lines.length && lines[idx].trim() === '') idx += 1;
+      const prose = lines.slice(idx);
+      // Drop trailing blank lines
+      let end = prose.length;
+      while (end > 0 && prose[end - 1].trim() === '') end -= 1;
+
+      return { path, affects, prose: prose.slice(0, end) };
+    }
+
+    const settingPath = computed<string>(() => parsedDocs().path);
+    const affectsBullets = computed<string[]>(() => parsedDocs().affects);
+    const descriptionLines = computed<string[]>(() => parsedDocs().prose);
 
     return {
       copyLabel,
