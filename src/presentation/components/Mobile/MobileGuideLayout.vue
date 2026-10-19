@@ -100,6 +100,7 @@
           :category="category"
           :posture-level="postureLevel"
           :checked-ids="checkedIds"
+          :collection-os="currentOs === OperatingSystem.GrapheneOS ? 'grapheneos' : 'android'"
           @toggle="onToggle"
         />
       </template>
