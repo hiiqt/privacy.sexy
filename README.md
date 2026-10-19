@@ -253,3 +253,12 @@ For any security concerns or vulnerabilities, please consult the [Security Polic
 ## Supporters
 
 [![Supporters appreciation banner showing the supporters](https://undergroundwires.dev/img/supporters.jpg)](https://undergroundwires.dev/supporters)
+
+## Official resources
+
+- GrapheneOS — https://grapheneos.org/
+- GrapheneOS web installer — https://grapheneos.org/install/web
+- GrapheneOS features overview — https://grapheneos.org/features
+- Android privacy hub — https://developer.android.com/privacy
+- ADB documentation — https://developer.android.com/tools/adb
+
