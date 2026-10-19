@@ -80,15 +80,6 @@
       </div>
       <pre class="card__code"><code>{{ script.code.execute }}</code></pre>
     </div>
-
-    <!-- 6. Feedback link (only when a path is known) -->
-    <a
-      v-if="settingPath"
-      :href="feedbackHref"
-      target="_blank"
-      rel="noopener"
-      class="card__feedback"
-    >Directions differ on my device? Report it →</a>
   </article>
 </template>
 
@@ -110,10 +101,6 @@ export default defineComponent({
     isChecked: {
       type: Boolean,
       default: false,
-    },
-    collectionOs: {
-      type: String,
-      default: '',
     },
   },
   emits: {
@@ -196,21 +183,6 @@ export default defineComponent({
     const affectsBullets = computed<string[]>(() => parsedDocs().affects);
     const proseBlocks = computed<ProseBlock[]>(() => parsedDocs().blocks);
 
-    const feedbackHref = computed<string>(() => {
-      const osLabel = props.collectionOs === 'grapheneos' ? 'GrapheneOS' : 'Android';
-      const title = encodeURIComponent(
-        `Path correction: ${props.script.name} (${osLabel})`,
-      );
-      const body = encodeURIComponent(
-        `Guide: ${props.script.name}\n`
-        + `Path shown in the app: ${settingPath.value}\n`
-        + `My device (model + Android/GrapheneOS version): \n`
-        + `Path on my device: \n`
-        + `Notes: `,
-      );
-      return `https://github.com/hiiqt/privacy.sexy/issues/new?title=${title}&body=${body}`;
-    });
-
     return {
       copyLabel,
       copy,
@@ -218,7 +190,6 @@ export default defineComponent({
       affectsBullets,
       proseBlocks,
       detailsExpanded,
-      feedbackHref,
     };
   },
 });
@@ -439,22 +410,5 @@ export default defineComponent({
   word-break: break-all;
   line-height: 1.5;
   overflow-x: auto;
-}
-
-/* ── Feedback link ── */
-.card__feedback {
-  display: block;
-  margin-top: 0.55rem;
-  font-size: 0.72rem;
-  color: var(--text-muted, #6e6e73);
-  text-decoration: none;
-  text-align: right;
-}
-
-.card__feedback:hover,
-.card__feedback:focus-visible {
-  color: var(--affects-color, #007aff);
-  text-decoration: underline;
-  outline: none;
 }
 </style>

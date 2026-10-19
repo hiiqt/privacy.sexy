@@ -37,7 +37,6 @@
         :key="script.executableId"
         :script="script"
         :is-checked="checkedIds.has(script.executableId)"
-        :collection-os="collectionOs"
         @toggle="$emit('toggle', $event)"
       />
 
@@ -48,7 +47,6 @@
         :category="sub"
         :posture-level="postureLevel"
         :checked-ids="checkedIds"
-        :collection-os="collectionOs"
         class="accordion__sub"
         @toggle="$emit('toggle', $event)"
       />
@@ -80,10 +78,6 @@ export default defineComponent({
     checkedIds: {
       type: Object as PropType<ReadonlySet<ExecutableId>>,
       default: () => new Set<ExecutableId>(),
-    },
-    collectionOs: {
-      type: String,
-      default: '',
     },
   },
   emits: {
