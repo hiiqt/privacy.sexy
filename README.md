@@ -252,7 +252,7 @@ For any security concerns or vulnerabilities, please consult the [Security Polic
 
 ## Supporters
 
-[![Supporters appreciation banner showing the supporters](https://undergroundwires.dev/img/supporters.jpg)](https://undergroundwires.dev/supporters)
+Shoutout to my fairy godmother for all the good juju in submitting this project on time! Whew..
 
 ## Official resources
 
